@@ -320,59 +320,35 @@ export const Report = () => {
     }
   };
 
-  // Function to get YouTube video data based on health level
-  // Using specific videos from each playlist that will autoplay
-  const getYouTubeVideoData = (level) => {
+  // Function to get Vimeo video data based on health level
+  // Using Vimeo showcases for each level
+  const getVimeoVideoData = (level) => {
     const videoData = {
-      // Red/High level - First video from the high stress playlist
+      // Red/High level - Vimeo showcase for high stress
       high: {
-        videoId: "videoseries", // Will play from playlist
-        playlistId: "PLmWyI2rwIlss9UOuBfmx248Bx6kDdsDTf",
-        playlistUrl: "https://youtube.com/playlist?list=PLmWyI2rwIlss9UOuBfmx248Bx6kDdsDTf&si=NOq6fRExtMGTlCC3"
+        showcaseId: "11956449",
+        showcaseUrl: "https://vimeo.com/showcase/11956449?share=copy&fl=sm&fe=fe"
       },
-      // Yellow/Moderate level - First video from the moderate playlist
+      // Yellow/Moderate level - Vimeo showcase for moderate stress
       moderate: {
-        videoId: "videoseries",
-        playlistId: "PLmWyI2rwIlssty92W0NfEAKQtf5ggtIpj",
-        playlistUrl: "https://youtube.com/playlist?list=PLmWyI2rwIlssty92W0NfEAKQtf5ggtIpj&si=HW-TvEOGZ66y8QZA"
+        showcaseId: "11956445",
+        showcaseUrl: "https://vimeo.com/showcase/11956445?share=copy&fl=sm&fe=fe"
       },
-      // Green/Low level - First video from the low stress playlist
+      // Green/Low level - Vimeo showcase for low stress
       low: {
-        videoId: "videoseries",
-        playlistId: "PLmWyI2rwIlsuucDLmfPqR69tyW622GLAZ",
-        playlistUrl: "https://youtube.com/playlist?list=PLmWyI2rwIlsuucDLmfPqR69tyW622GLAZ&si=JQ5f1LyP9-yPGpc2"
+        showcaseId: "11956432",
+        showcaseUrl: "https://vimeo.com/showcase/11956432?share=copy&fl=sm&fe=fe"
       }
     };
     return videoData[level] || videoData.moderate;
   };
 
-  // Function to get YouTube embed URL that will autoplay from the playlist
-  // Enhanced with Error 153 fixes
-  const getYouTubeEmbedUrl = (level) => {
-    const data = getYouTubeVideoData(level);
-    if (data.playlistId) {
-      const origin = getValidOriginForElectron();
-      
-      // Use youtube-nocookie.com domain for better compatibility and privacy
-      // This domain is specifically designed for embedded content and handles referrers better
-      // Build URL with all required parameters to prevent Error 153
-      const params = new URLSearchParams({
-        list: data.playlistId,
-        autoplay: '1',
-        mute: '1',  // Required for autoplay in most browsers
-        rel: '0',   // Don't show related videos
-        modestbranding: '1',
-        playsinline: '1',
-        enablejsapi: '1',
-        origin: origin,
-        widget_referrer: origin,
-        // Additional parameters to help with Error 153
-        controls: '1',
-        fs: '1',  // Allow fullscreen
-        iv_load_policy: '3',  // Hide annotations
-      });
-
-      return `https://www.youtube-nocookie.com/embed/videoseries?${params.toString()}`;
+  // Function to get Vimeo embed URL for the showcase
+  const getVimeoEmbedUrl = (level) => {
+    const data = getVimeoVideoData(level);
+    if (data.showcaseId) {
+      // Vimeo showcase embed URL format
+      return `https://vimeo.com/showcase/${data.showcaseId}/embed`;
     }
     return null;
   };
@@ -523,15 +499,15 @@ export const Report = () => {
   const overallHealthLevel = getOverallHealthLevel();
   
   // Create single video data based on overall health level
-  const youtubeData = getYouTubeVideoData(overallHealthLevel);
-  const baseEmbedUrl = getYouTubeEmbedUrl(overallHealthLevel);
+  const vimeoData = getVimeoVideoData(overallHealthLevel);
+  const baseEmbedUrl = getVimeoEmbedUrl(overallHealthLevel);
   
-  // Add retry timestamp to force reload on retry (helps with Error 153)
+  // Add retry timestamp to force reload on retry
   const videoData = {
     level: overallHealthLevel,
-    playlistUrl: youtubeData.playlistUrl,
+    showcaseUrl: vimeoData.showcaseUrl,
     embedUrl: retryCount > 0 && baseEmbedUrl
-      ? `${baseEmbedUrl}&t=${Date.now()}`
+      ? `${baseEmbedUrl}?t=${Date.now()}`
       : baseEmbedUrl,
     title: `${overallHealthLevel.charAt(0).toUpperCase() + overallHealthLevel.slice(1)} Level Recommendations`
   };
@@ -759,16 +735,20 @@ export const Report = () => {
             borderRadius: "12px",
             maxWidth: "1200px",
             width: "90vw"
+          },
+          body: {
+            padding: "16px",
+            width: "100%"
           }
         }}
       >
-          <Stack gap="lg" align="center">
+          <Stack gap="lg" align="center" w="100%">
             <Text fw="bold" fz={20} ta="center">
             Nice work completing the scan. We've made some videos that might be helpful for where you're at.
           </Text>
           
-          {/* Single YouTube Video Embed - Plays from playlist */}
-          <Stack gap="sm">
+          {/* Vimeo Video Embed - Plays from showcase */}
+          <Stack gap="sm" w="100%">
             <MantineBox
               w="100%"
               h={550}
@@ -787,11 +767,9 @@ export const Report = () => {
                   src={videoData.embedUrl}
                   title={videoData.title}
                   frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
-                  loading="eager"
-                  sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
                   style={{ border: 'none' }}
                 />
               ) : videoError || !videoData.embedUrl ? (
@@ -814,7 +792,7 @@ export const Report = () => {
                     Video Temporarily Unavailable
                   </Text>
                   <Text fz="md" c="dimmed" ta="center" maw={400}>
-                    We're having trouble loading the video in the app. Please use the button below to watch it on YouTube.
+                    We're having trouble loading the video in the app. Please use the button below to watch it on Vimeo.
                   </Text>
                   <Group gap="md">
                     <Button
@@ -835,7 +813,7 @@ export const Report = () => {
                     <Button
                       variant="filled"
                       component="a"
-                      href={videoData.playlistUrl}
+                      href={videoData.showcaseUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       styles={{
@@ -847,7 +825,7 @@ export const Report = () => {
                         }
                       }}
                     >
-                      Watch on YouTube
+                      Watch on Vimeo
                     </Button>
                   </Group>
                 </div>
@@ -873,13 +851,13 @@ export const Report = () => {
             </MantineBox>
             
             {/* Fallback link - Always visible for easy access */}
-            {videoData.embedUrl && videoData.playlistUrl && !videoError && (
+            {/* {videoData.embedUrl && videoData.showcaseUrl && !videoError && (
               <Text ta="center" size="sm" c="dimmed" mb={0}>
                 <Button
                   variant="subtle"
                   size="sm"
                   component="a"
-                  href={videoData.playlistUrl}
+                  href={videoData.showcaseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   styles={{
@@ -891,10 +869,10 @@ export const Report = () => {
                     }
                   }}
                 >
-                  Having trouble viewing? Watch on YouTube
+                  Having trouble viewing? Watch on Vimeo
                 </Button>
               </Text>
-            )}
+            )} */}
           </Stack>
           
           {/* Call to Action Button */}
