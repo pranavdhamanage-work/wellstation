@@ -320,36 +320,51 @@ export const Report = () => {
     }
   };
 
-  // Function to get Vimeo video data based on health level
-  // Using Vimeo showcases for each level
-  const getVimeoVideoData = (level) => {
-    const videoData = {
-      // Red/High level - Vimeo showcase for high stress
-      high: {
-        showcaseId: "11956449",
-        showcaseUrl: "https://vimeo.com/showcase/11956449?share=copy&fl=sm&fe=fe"
-      },
-      // Yellow/Moderate level - Vimeo showcase for moderate stress
-      moderate: {
-        showcaseId: "11956445",
-        showcaseUrl: "https://vimeo.com/showcase/11956445?share=copy&fl=sm&fe=fe"
-      },
-      // Green/Low level - Vimeo showcase for low stress
-      low: {
-        showcaseId: "11956432",
-        showcaseUrl: "https://vimeo.com/showcase/11956432?share=copy&fl=sm&fe=fe"
-      }
-    };
-    return videoData[level] || videoData.moderate;
+  // Video IDs for each health level category
+  const videoIdsByLevel = {
+    low: [
+      1132713698, 1132719023, 1132718797, 1132719197, 1132720316, 1132730318,
+      1132726705, 1132727102, 1132727480, 1132727659, 1132728437, 1132729551,
+      1132731402, 1132731830, 1132732922, 1132734020
+    ],
+    moderate: [
+      1132715176, 1132721017, 1132722167, 1132722926, 1132723672, 1132734992,
+      1132735813, 1132736406, 1132737011, 1132738152, 1132740187, 1132740635
+    ],
+    high: [
+      1132715987, 1132725531, 1132724571, 1132724777, 1132725740, 1132725962
+    ]
   };
 
-  // Function to get Vimeo embed URL for the showcase
+  // Function to get a random video ID from the category
+  const getRandomVideoId = (level) => {
+    const videoIds = videoIdsByLevel[level] || videoIdsByLevel.moderate;
+    const randomIndex = Math.floor(Math.random() * videoIds.length);
+    return videoIds[randomIndex];
+  };
+
+  // Function to get Vimeo video data based on health level
+  const getVimeoVideoData = (level) => {
+    const showcaseUrls = {
+      high: "https://vimeo.com/showcase/11956449",
+      moderate: "https://vimeo.com/showcase/11956445",
+      low: "https://vimeo.com/showcase/11956432"
+    };
+    
+    const videoId = getRandomVideoId(level);
+    
+    return {
+      videoId: videoId,
+      showcaseUrl: showcaseUrls[level] || showcaseUrls.moderate
+    };
+  };
+
+  // Function to get Vimeo embed URL for individual video
   const getVimeoEmbedUrl = (level) => {
     const data = getVimeoVideoData(level);
-    if (data.showcaseId) {
-      // Vimeo showcase embed URL format with autoplay enabled
-      // Removed muted=1 so audio will play from the first time
-      return `https://vimeo.com/showcase/${data.showcaseId}/embed?autoplay=1`;
+    if (data.videoId) {
+      // Vimeo player embed URL with autoplay, loop, and unmuted
+      return `https://player.vimeo.com/video/${data.videoId}?autoplay=1&loop=1&muted=0&autopause=0`;
     }
     return null;
   };
@@ -730,36 +745,42 @@ export const Report = () => {
         centered
         size="xxl"
         withCloseButton={false}
+        padding={0}
         styles={{
           content: {
             border: "2px solid #E55A2B",
             borderRadius: "12px",
-            maxWidth: "1200px",
-            width: "90vw"
+            maxWidth: "95vw",
+            width: "95vw",
+            overflow: "hidden"
           },
           body: {
-            padding: "16px",
+            padding: "0 !important",
+            margin: "0 !important",
             width: "100%"
+          },
+          inner: {
+            padding: "0 !important"
           }
         }}
       >
-          <Stack gap="lg" align="center" w="100%">
-            <Text fw="bold" fz={20} ta="center">
+          <MantineBox style={{ padding: "0", margin: "0", width: "100%" }}>
+            <Text fw="bold" fz={20} ta="center" style={{ padding: "16px", margin: "0", backgroundColor: "white" }}>
             Nice work completing the scan. We've made some videos that might be helpful for where you're at.
           </Text>
           
           {/* Vimeo Video Embed - Plays from showcase */}
-          <Stack gap="sm" w="100%">
-            <MantineBox
-              w="100%"
-              h={550}
-              style={{
-                borderRadius: "8px",
-                border: "2px solid #E55A2B",
-                overflow: "hidden",
-                position: "relative"
-              }}
-            >
+          <MantineBox
+            style={{
+              width: "100%",
+              height: "650px",
+              margin: "0",
+              padding: "0",
+              display: "block",
+              overflow: "hidden",
+              backgroundColor: "#000"
+            }}
+          >
               {!videoError && videoData.embedUrl ? (
                 <iframe
                   key={retryCount} // Force re-render on retry
@@ -771,7 +792,12 @@ export const Report = () => {
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                   allowFullScreen
                   referrerPolicy="strict-origin-when-cross-origin"
-                  style={{ border: 'none' }}
+                  style={{ 
+                    border: 'none',
+                    display: 'block',
+                    margin: '0',
+                    padding: '0'
+                  }}
                 />
               ) : videoError || !videoData.embedUrl ? (
                 // Error state - show fallback UI
@@ -781,10 +807,10 @@ export const Report = () => {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    height: 550,
+                    height: 650,
                     backgroundColor: "#f0f0f0",
-                    borderRadius: "8px",
-                    border: "2px solid #E55A2B",
+                    borderRadius: "0px",
+                    border: "none",
                     padding: "40px",
                     gap: "20px"
                   }}
@@ -837,10 +863,10 @@ export const Report = () => {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    height: 550,
+                    height: 650,
                     backgroundColor: "#f0f0f0",
-                    borderRadius: "8px",
-                    border: "2px solid #E55A2B",
+                    borderRadius: "0px",
+                    border: "none",
                     padding: "20px",
                   }}
                 >
@@ -850,54 +876,31 @@ export const Report = () => {
                 </div>
               )}
             </MantineBox>
-            
-            {/* Fallback link - Always visible for easy access */}
-            {/* {videoData.embedUrl && videoData.showcaseUrl && !videoError && (
-              <Text ta="center" size="sm" c="dimmed" mb={0}>
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  component="a"
-                  href={videoData.showcaseUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  styles={{
-                    root: {
-                      color: "#E55A2B",
-                      "&:hover": {
-                        backgroundColor: "rgba(229, 90, 43, 0.1)",
-                      }
-                    }
-                  }}
-                >
-                  Having trouble viewing? Watch on Vimeo
-                </Button>
-              </Text>
-            )} */}
-          </Stack>
           
           {/* Call to Action Button */}
-          <Button
-            variant="brand-filled"
-            size="lg"
-            fullWidth
-            onClick={() => {
-              setIsModalOpen(false);
-              setStep("welcome");
-              navigate("/booth");
-            }}
-            styles={{
-              root: {
-                backgroundColor: "#E55A2B",
-                "&:hover": {
-                  backgroundColor: "#D1451A",
+          <MantineBox style={{ padding: "24px", margin: "0", width: "100%", backgroundColor: "white" }}>
+            <Button
+              variant="brand-filled"
+              size="lg"
+              fullWidth
+              onClick={() => {
+                setIsModalOpen(false);
+                setStep("welcome");
+                navigate("/booth");
+              }}
+              styles={{
+                root: {
+                  backgroundColor: "#E55A2B",
+                  "&:hover": {
+                    backgroundColor: "#D1451A",
+                  }
                 }
-              }
-            }}
-          >
-         Exit
-          </Button>
-        </Stack>
+              }}
+            >
+            Exit
+            </Button>
+          </MantineBox>
+        </MantineBox>
       </Modal>
     </Center>
   );
