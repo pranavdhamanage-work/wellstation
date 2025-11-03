@@ -347,8 +347,9 @@ export const Report = () => {
   const getVimeoEmbedUrl = (level) => {
     const data = getVimeoVideoData(level);
     if (data.showcaseId) {
-      // Vimeo showcase embed URL format
-      return `https://vimeo.com/showcase/${data.showcaseId}/embed`;
+      // Vimeo showcase embed URL format with autoplay enabled
+      // Removed muted=1 so audio will play from the first time
+      return `https://vimeo.com/showcase/${data.showcaseId}/embed?autoplay=1`;
     }
     return null;
   };
@@ -507,7 +508,7 @@ export const Report = () => {
     level: overallHealthLevel,
     showcaseUrl: vimeoData.showcaseUrl,
     embedUrl: retryCount > 0 && baseEmbedUrl
-      ? `${baseEmbedUrl}?t=${Date.now()}`
+      ? `${baseEmbedUrl}&t=${Date.now()}`
       : baseEmbedUrl,
     title: `${overallHealthLevel.charAt(0).toUpperCase() + overallHealthLevel.slice(1)} Level Recommendations`
   };
