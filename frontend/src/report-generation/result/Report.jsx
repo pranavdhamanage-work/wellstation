@@ -21,6 +21,22 @@ import useRecommendations from "../../resources/useRecommendations";
 
 const TIME_LEFT = 30; // time left in seconds
 
+// Video IDs for each health level category
+const videoIdsByLevel = {
+  low: [
+    1132713698, 1132719023, 1132718797, 1132719197, 1132720316, 1132730318,
+    1132726705, 1132727102, 1132727480, 1132727659, 1132728437, 1132729551,
+    1132731402, 1132731830, 1132732922, 1132734020
+  ],
+  moderate: [
+    1132715176, 1132721017, 1132722167, 1132722926, 1132723672, 1132734992,
+    1132735813, 1132736406, 1132737011, 1132738152, 1132740187, 1132740635
+  ],
+  high: [
+    1132715987, 1132725531, 1132724571, 1132724777, 1132725740, 1132725962
+  ]
+};
+
 /**
  * Gets a valid origin for YouTube embeds in Electron apps
  * This fixes Error 153 by providing a proper HTTP Referer
@@ -115,6 +131,7 @@ export const Report = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [selectedVideoId, setSelectedVideoId] = useState(null);
   const setStep = useSetAtom(stepAtom);
 
   const emailSentRef = useRef(false);
@@ -243,6 +260,73 @@ export const Report = () => {
     }
   }, [isModalOpen]);
 
+  // Set video ID once when data is available (only once per session, not per modal open)
+  useEffect(() => {
+    const currentData = trialId ? trialReport.data : report.data;
+    
+    if (!selectedVideoId && currentData) {
+      // Calculate health level
+      const patientDataTemp = {
+        stressLevel: (currentData?.mentalHealthScores || currentData?.mental_health_scores)?.stress || "NA",
+        anxietyLevel: (currentData?.mentalHealthScores || currentData?.mental_health_scores)?.anxiety || "NA",
+        depressionLevel: (currentData?.mentalHealthScores || currentData?.mental_health_scores)?.depression || "NA",
+      };
+      
+      const getStressScoreTemp = (level) => {
+        if (!level || level === "NA" || level === "na") return 1;
+        const normalizedLevel = level.toLowerCase();
+        switch (normalizedLevel) {
+          case "low": return 1;
+          case "medium": return 2;
+          case "high": return 3;
+          default: return 1;
+        }
+      };
+      
+      const getAnxietyScoreTemp = (level) => {
+        if (!level || level === "NA" || level === "na") return 2;
+        const normalizedLevel = level.toLowerCase();
+        switch (normalizedLevel) {
+          case "low": return 2;
+          case "medium": return 4;
+          case "high": return 6;
+          default: return 2;
+        }
+      };
+      
+      const getDepressionScoreTemp = (level) => {
+        if (!level || level === "NA" || level === "na") return 2;
+        const normalizedLevel = level.toLowerCase();
+        switch (normalizedLevel) {
+          case "low": return 2;
+          case "medium": return 4;
+          case "high": return 6;
+          default: return 2;
+        }
+      };
+      
+      const totalScore = getStressScoreTemp(patientDataTemp.stressLevel) + 
+                        getAnxietyScoreTemp(patientDataTemp.anxietyLevel) + 
+                        getDepressionScoreTemp(patientDataTemp.depressionLevel);
+      
+      let level;
+      if (totalScore >= 12) {
+        level = "high";
+      } else if (totalScore >= 9) {
+        level = "moderate";
+      } else {
+        level = "low";
+      }
+      
+      // Select a random video ID based on health level - ONLY ONCE
+      const videoIds = videoIdsByLevel[level] || videoIdsByLevel.moderate;
+      const randomIndex = Math.floor(Math.random() * videoIds.length);
+      setSelectedVideoId(videoIds[randomIndex]);
+      
+      console.log("Video selected for this session:", videoIds[randomIndex], "Level:", level);
+    }
+  }, [selectedVideoId, trialId, trialReport.data, report.data]);
+
   // Handle loading and error states after all hooks
   // All hooks must be called before any conditional returns
   const isLoading = report.isLoading || trialReport.isLoading;
@@ -318,22 +402,6 @@ export const Report = () => {
       case "high": return 6;
       default: return 2;
     }
-  };
-
-  // Video IDs for each health level category
-  const videoIdsByLevel = {
-    low: [
-      1132713698, 1132719023, 1132718797, 1132719197, 1132720316, 1132730318,
-      1132726705, 1132727102, 1132727480, 1132727659, 1132728437, 1132729551,
-      1132731402, 1132731830, 1132732922, 1132734020
-    ],
-    moderate: [
-      1132715176, 1132721017, 1132722167, 1132722926, 1132723672, 1132734992,
-      1132735813, 1132736406, 1132737011, 1132738152, 1132740187, 1132740635
-    ],
-    high: [
-      1132715987, 1132725531, 1132724571, 1132724777, 1132725740, 1132725962
-    ]
   };
 
   // Function to get a random video ID from the category
@@ -514,25 +582,27 @@ export const Report = () => {
 
   const overallHealthLevel = getOverallHealthLevel();
   
-  // Create single video data based on overall health level
-  const vimeoData = getVimeoVideoData(overallHealthLevel);
-  const baseEmbedUrl = getVimeoEmbedUrl(overallHealthLevel);
+  // Create video data using the selectedVideoId from state (doesn't change on re-render)
+  const showcaseUrls = {
+    high: "https://vimeo.com/showcase/11956449",
+    moderate: "https://vimeo.com/showcase/11956445",
+    low: "https://vimeo.com/showcase/11956432"
+  };
   
-  // Add retry timestamp to force reload on retry
   const videoData = {
     level: overallHealthLevel,
-    showcaseUrl: vimeoData.showcaseUrl,
-    embedUrl: retryCount > 0 && baseEmbedUrl
-      ? `${baseEmbedUrl}&t=${Date.now()}`
-      : baseEmbedUrl,
+    showcaseUrl: showcaseUrls[overallHealthLevel] || showcaseUrls.moderate,
+    embedUrl: selectedVideoId 
+      ? `https://player.vimeo.com/video/${selectedVideoId}?autoplay=1&loop=1&muted=0&autopause=0`
+      : null,
     title: `${overallHealthLevel.charAt(0).toUpperCase() + overallHealthLevel.slice(1)} Level Recommendations`
   };
 
   // Debug logging
   console.log("Overall Health Level:", overallHealthLevel);
   console.log("Patient Data:", patientData);
+  console.log("Selected Video ID:", selectedVideoId);
   console.log("Video Data:", videoData);
-  console.log("Retry Count:", retryCount);
 
   return (
     <Center h="100%">
@@ -783,7 +853,6 @@ export const Report = () => {
           >
               {!videoError && videoData.embedUrl ? (
                 <iframe
-                  key={retryCount} // Force re-render on retry
                   width="100%"
                   height="100%"
                   src={videoData.embedUrl}
