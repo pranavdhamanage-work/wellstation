@@ -176,7 +176,7 @@ export const Report = () => {
   };
 
   const handleOpenInfoPopUp = (metric) => {
-    // console.log("<= metric", metric);
+    
     setSelectedMetric(metric);
     // Convert translation string to array format expected by PopDisplayComponent
     let infoText = t(`report.infoText.${metric.accessor}`, {
