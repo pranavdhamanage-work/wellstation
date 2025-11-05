@@ -1,13 +1,13 @@
 name: Build Windows Application
 
 on:
-  # Trigger on push to main branch
+  # Trigger on push to main, lenovo, and lenovo2 branches
   push:
-    branches: [main, master]
+    branches: [main, master, lenovo, lenovo2]
 
-  # Trigger on pull request to main branch
+  # Trigger on pull request to main, lenovo, and lenovo2 branches
   pull_request:
-    branches: [main, master]
+    branches: [main, master, lenovo, lenovo2]
 
   # Allow manual triggering from GitHub UI
   workflow_dispatch:
