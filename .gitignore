@@ -49,5 +49,10 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv/
 python-venv/
+backend/venv/
+backend/.venv/
+backend/media/
+backend/processingScripts/model_outputs/
 
